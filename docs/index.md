@@ -8,7 +8,7 @@ This plugin provides config with following features:
 3. Configuration is set in request context to be accessed across multiple plugins
 4. Interpolate any env variables in config 
 
-Let's say we are connecting to Redis in 3 different plugins. If redis configuration changes for some reason, then we need to change it in all instances of these plugins. In such cases, it is handy when the configuration is kept at one place.
+Let's say we are connecting to [Redis](https://redis.io/) in 3 different plugins. If redis configuration changes for some reason, then we need to change it in all instances of these plugins. In such cases, it is handy when the configuration is kept at one place.
 
 ## Installation
 
@@ -32,8 +32,7 @@ OR
     plugins=config-by-env
 
 ## How does it work?
-1. Let us assume following config is stored in schema:
-    Sample Config:
+1. Let us assume following config is stored in schema. Please not *default | docker | production* are possible values of `KONG_ENV` environmnet variable:
 ```
    {
         "default": {
@@ -58,7 +57,7 @@ OR
     }
 ```
 2. When an nginx worker is instantiated, config is loaded from DB/file.
-3. Merge environment specific config with the default config. When KONG_ENV=docker, config after merging with default config will be:
+3. Merge environment specific config with the `default` config. When `KONG_ENV=docker`, config after merging with `default` config will be:
 ```
 {
 	"redis": {
@@ -68,7 +67,7 @@ OR
 	}
 }
 ```
-4. Interpolate environment variables. Let's envionment variable TEAM_NAME=user-profile then config will be:
+4. Interpolate environment variables. Let's envionment variable `TEAM_NAME=user-profile` then config will be:
 ```
 {
 	"redis": {
@@ -91,4 +90,4 @@ OR
 
 | Key | Type  | Required | Description |
 | --- | --- | --- | --- |
-| config |  | string | true | Config as JSON |
+| config | string | true | Config as JSON |
