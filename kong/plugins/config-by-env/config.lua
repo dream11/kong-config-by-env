@@ -55,42 +55,7 @@ local function get_config()
 	return config
 end
 
-local function get_service_url(service_name)
-	kong.log.debug("fetching url from config::" .. service_name)
-	local config, err = get_config()
-	if err then
-		kong.log.err(err)
-		return false, {status = 500, message = "Error in loading config-by-env"}
-	end
-	kong.log.debug("fetched url from config::" .. config["services"][service_name])
-	return config["services"][service_name]
-end
-
-local function get_auth_prefix()
-	kong.log.debug("fetching auth prefix from config")
-	local config, err = get_config()
-	if err then
-		kong.log.err("Error in loading config-by-env", err)
-		return "auth-"
-	end
-	return config["auth_prefix"] or "auth-"
-end
-
-local function get_datadog_host_and_port()
-    local default_host = "localhost"
-    local default_port = 8125
-	local config, err = get_config()
-	if err then
-		kong.log.err("Error in loading config-by-env", err)
-		return default_host, default_port
-	end
-	return config["datadog_host"] or default_host, config["datadog_port"] or default_port
-end
-
 local _M = {}
 _M.get_config = get_config
-_M.get_service_url = get_service_url
-_M.get_auth_prefix = get_auth_prefix
-_M.get_datadog_host_and_port = get_datadog_host_and_port
 
 return _M
