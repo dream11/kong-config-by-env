@@ -10,12 +10,12 @@ _M.fixtures = {
             charset utf-8;
               charset_types application/json;
               default_type application/json;
-    
+
             location = "/test" {
                 content_by_lua_block {
-                  ngx.status = ngx.HTTP_OK  
+                  ngx.status = ngx.HTTP_OK
                   ngx.print("10001")
-                  return ngx.exit(0)  
+                  return ngx.exit(0)
                 }
             }
         }
@@ -29,9 +29,9 @@ _M.fixtures = {
 
         location = "/test" {
             content_by_lua_block {
-              ngx.status = ngx.HTTP_OK  
+              ngx.status = ngx.HTTP_OK
               ngx.print("10002")
-              return ngx.exit(0)  
+              return ngx.exit(0)
             }
         }
     }

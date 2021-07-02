@@ -7,7 +7,7 @@ local function replaceStringEnvVariables(s)
 		function(str)
             local env_variable = string.sub(str, 2, string.len(str) - 1)
             local result = os.getenv(env_variable)
-            kong.log.notice("Fetching from env:: " .. env_variable)
+            kong.log.notice("Interpolating env variable: " .. env_variable)
             kong.log.notice("Value::" .. inspect(result))
             result = result:gsub("\\([nt])", {n="\n", t="\t"})
             return result

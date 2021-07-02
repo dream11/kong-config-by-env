@@ -6,3 +6,6 @@
 .pongo/.ash_history
 *.rock
 *.report.out
+# servroot typically is the Kong working directory for tests
+servroot
+.busted

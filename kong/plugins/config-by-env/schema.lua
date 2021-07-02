@@ -31,10 +31,21 @@ return {
 			config = {
 				type = "record",
 				fields = {
-					{config = {type = "string", required = true}}
+					{
+						config = {
+							type = "string",
+							required = true
+						}
+					},
+					{
+						set_service_url = {
+							type = "boolean",
+							default = false
+						}
+					},
 				},
                 custom_validator = schema_validator
-			}
+			},
 		}
 	}
 }

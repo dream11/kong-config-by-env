@@ -8,13 +8,20 @@ function AppConfigHandler:access(conf)
     if not config or err then
         return kong.response.exit("Error in fetching application config")
     end
-    local service_url = config["services"][kong.router.get_service()["name"]]
-    local host, port = pl_utils.splitv(service_url, ":")
-    if not port then port = config["upstream_port"] end
-    kong.log.debug("Upstream url::"..host..":"..port)
 
-    kong.service.set_target(host, tonumber(port))
-    kong.ctx.shared.upstream_host = host
+    -- Set config in request context to be shared between all plugins
+    kong.ctx.shared.config_by_env = config
+
+    -- Override the service host url from the config
+    if conf.set_service_url then
+        local service_url = config["services"][kong.router.get_service()["name"]]
+        local host, port = pl_utils.splitv(service_url, ":")
+        if not port then port = config["upstream_port"] end
+        kong.log.debug("Upstream url::"..host..":"..port)
+
+        kong.service.set_target(host, tonumber(port))
+        kong.ctx.shared.upstream_host = host
+    end
 end
 
 function AppConfigHandler:init_worker()

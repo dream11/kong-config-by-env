@@ -1,7 +1,6 @@
 local cjson = require "cjson"
-
 local helpers = require "spec.helpers"
-local fixtures = require "kong.plugins.config-by-env.fixtures"
+local fixtures = require "spec.config-by-env.fixtures"
 
 for _, strategy in helpers.each_strategy() do
     describe("config-by-env plugin [#" .. strategy .. "]", function()
@@ -38,7 +37,10 @@ for _, strategy in helpers.each_strategy() do
 
             app_config_plugin = bp.plugins:insert{
                 name = "config-by-env",
-                config = {config = cjson.encode(input)}
+                config = {
+                    config = cjson.encode(input),
+                    set_service_url = true
+                }
             }
 
             assert(helpers.start_kong({
@@ -58,7 +60,6 @@ for _, strategy in helpers.each_strategy() do
         end)
 
         describe("Cache is invalidated on updating config-by-env", function()
-
             it("Initially request should be proxied to old port", function()
                 local res = assert(proxy_client:send(
                                        {
@@ -72,11 +73,11 @@ for _, strategy in helpers.each_strategy() do
                 assert(body_data == '10001')
             end)
 
-            it("After updating config reuquest shoud be proxied to new port", function()
+            it("After updating config request shoud be proxied to new port", function()
 
                 local input1 = {
                     default = {
-                        services = {test = mock_host .. ":" .. 10002},
+                        services = {test = mock_host .. ":" .. 10002}, -- this is a new service url
                         upstream_port = mock_port
                     },
                     staging = {},
