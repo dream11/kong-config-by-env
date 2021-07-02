@@ -3,12 +3,63 @@
 
 ## Usecase
 This plugin provides config with following features:
-1. Maintains environment based configuration
-2. Configuration is cached as a Lua table
-3. Configuration is set in request context to be accessed across multiple plugins
-4. Interpolate any env variables in config 
+1. Maintains environment based configuration based on KONG_ENV.
+2. Configuration is cached as a Lua table.
+3. Configuration is set in request context to be accessed across multiple plugins.
+4. Interpolate any environment variables in configuration.
 
 Let's say we are connecting to [Redis](https://redis.io/) in 3 different plugins. If redis configuration changes for some reason, then we need to change it in all instances of these plugins. In such cases, it is handy when the configuration is kept at one place.
+
+
+## How does it work?
+1. Let us assume following config is stored in schema.  
+**Note**:  *default | docker | production* are possible values of `KONG_ENV` environmnet variable
+```
+   {
+        "default": {
+            "redis": {
+                "url": "localhost",
+                "port": 6379,
+				"connect_timeout": 1000
+            }
+        },
+		"docker": {
+            "redis": {
+                "url": "http://redis%TEAM_NAME%.dream11-staging.local",
+                "port": 8888
+            }
+        }
+        "production": {
+            "redis": {
+                "url": "http://redis.dream11.local",
+                "port": 9999
+            }
+        },
+    }
+```
+2. When an nginx worker starts, this plugin reads config from DB/file.
+3. Merges environment specific config with the `default` config. When `KONG_ENV=docker`, config after merging with `default` config will be:
+```
+{
+	"redis": {
+		"url": "http://redis%TEAM_NAME%.dream11-staging.local",
+		"port": 8888,
+		"connect_timeout": 1000
+	}
+}
+```
+4. Let's envionment variable `TEAM_NAME=user-profile` then config after interpolating environment variables will be:
+```
+{
+	"redis": {
+		"url": "http://redis-user-profile.dream11-staging.local",
+		"port": 8888,
+		"connect_timeout": 1000
+	}
+}
+```
+5. The final config from step 4 will be saved as a Lua table in L1 and L2 cache using [lua-resty-mlcache](https://github.com/thibaultcha/lua-resty-mlcache) library. This config will also be set in request context for other plugins to access this config.
+   
 
 ## Installation
 
@@ -31,63 +82,17 @@ OR
 
     plugins=config-by-env
 
-## How does it work?
-1. Let us assume following config is stored in schema. Please not *default | docker | production* are possible values of `KONG_ENV` environmnet variable:
-```
-   {
-        "default": {
-            "redis": {
-                "url": "localhost",
-                "port": 6379,
-				"connect_timeout": 1000
-            }
-        },
-		"docker": {
-            "redis": {
-                "url": "http://redis%%TEAM_NAME%%.dream11-staging.local",
-                "port": 8888
-            }
-        }
-        "production": {
-            "redis": {
-                "url": "http://redis.dream11.local",
-                "port": 9999
-            }
-        },
-    }
-```
-2. When an nginx worker is instantiated, config is loaded from DB/file.
-3. Merge environment specific config with the `default` config. When `KONG_ENV=docker`, config after merging with `default` config will be:
-```
-{
-	"redis": {
-		"url": "http://redis%%TEAM_NAME%%.dream11-staging.local",
-		"port": 8888,
-		"connect_timeout": 1000
-	}
-}
-```
-4. Interpolate environment variables. Let's envionment variable `TEAM_NAME=user-profile` then config will be:
-```
-{
-	"redis": {
-		"url": "http://redis-user-profile.dream11-staging.local",
-		"port": 8888,
-		"connect_timeout": 1000
-	}
-}
-```
-5. The final config from step 4 will be saved as a Lua table in L1 and L2 cache using [lua-resty-mlcache](https://github.com/thibaultcha/lua-resty-mlcache) library. This config will also be set in request context for other plugins to access this config.
+
+### Parameters
+
+| Key | Type  | Default | Required | Description |
+| --- | --- | --- | --- | --- |
+| config | string |   | true | Config as JSON |
+| set_service_url | boolean | false | false | Overrides service host URL |
 
 
 ## Caveats
 
 1. The plugin uses the kong.core_cache module which in turn uses [lua-resty-mlcache](https://github.com/thibaultcha/lua-resty-mlcache) library.
 2. To change the config at runtime, this plugin uses the worker_events module. It adds a listener to all crud events on the "plugin" entity. When there is a change in the config-by-env plugin, it invalidates the local L1 and L2 cache and sends invalidation event to all other nodes using the db which then invalidate their L1 and L2 cache.
-   
-
-### Parameters
-
-| Key | Type  | Required | Description |
-| --- | --- | --- | --- |
-| config | string | true | Config as JSON |
+3. Enable `set_service_url` in config when you want to override the host url of an upstream service. In a case where the host url of service changes with environment, then to manage the service url we have to either keep as kong.yaml file per environment or use config-by-env plugin to overrride the host url as per environment.
