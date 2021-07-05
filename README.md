@@ -3,7 +3,7 @@
 
 ## Usecase
 This plugin provides config with following features:
-1. Maintains environment based configuration based on KONG_ENV.
+1. Maintains environment based configuration based on `KONG_ENV`.
 2. Configuration is cached as a Lua table.
 3. Configuration is set in request context to be accessed across multiple plugins.
 4. Interpolate any environment variables in configuration.
@@ -11,9 +11,31 @@ This plugin provides config with following features:
 Let's say we are connecting to [Redis](https://redis.io/) in 3 different plugins. If redis configuration changes for some reason, then we need to change it in all instances of these plugins. In such cases, it is handy when the configuration is kept at one place.
 
 
+## Installation
+
+### [luarocks](https://luarocks.org/modules/dream11/kong-config-by-env)
+```bash
+luarocks install config-by-env
+```
+
+### source
+Clone this repo and run:
+```
+luarocks make
+```
+
+You will also need to enable this plugin by adding it to the list of enabled plugins using `KONG_PLUGINS` environment variable or the `plugins` key in `kong.conf`
+
+    export KONG_PLUGINS=config-by-env
+
+OR
+
+    plugins=config-by-env
+
+
 ## How does it work?
 1. Let us assume following config is stored in schema.  
-**Note**:  *default | docker | production* are possible values of `KONG_ENV` environmnet variable
+**Note**:  *default | docker | production* are possible values of `KONG_ENV` environment variable.
 ```
    {
         "default": {
@@ -37,8 +59,8 @@ Let's say we are connecting to [Redis](https://redis.io/) in 3 different plugins
         }
     }
 ```
-2. When an nginx worker starts, this plugin reads config from DB/file.
-3. Merges environment specific config with the `default` config. When `KONG_ENV=docker`, config after merging with `default` config will be:
+2. When an nginx worker starts, this plugin reads plugin's config from DB and caches it in memory.
+3. Uses plugin's config extracted in step 2 to merges environment specific config with the `default` config. When `KONG_ENV=docker`, config after merging with `default` config will be:
 ```
 {
 	"redis": {
@@ -48,7 +70,7 @@ Let's say we are connecting to [Redis](https://redis.io/) in 3 different plugins
 	}
 }
 ```
-4. Let's envionment variable `TEAM_NAME=user-profile` then config after interpolating environment variables will be:
+4. Let's say we set environment variable `TEAM_NAME=user-profile`, then config after interpolating environment variables will be:
 ```
 {
 	"redis": {
@@ -59,28 +81,6 @@ Let's say we are connecting to [Redis](https://redis.io/) in 3 different plugins
 }
 ```
 5. The final config from step 4 will be saved as a Lua table in L1 and L2 cache using [lua-resty-mlcache](https://github.com/thibaultcha/lua-resty-mlcache) library. This config will also be set in request context for other plugins to access this config.
-   
-
-## Installation
-
-### [luarocks](https://luarocks.org/modules/dream11/kong-config-by-env)
-```bash
-luarocks install config-by-env
-```
-
-### source
-Clone this repo and run:
-```
-luarocks make
-```
-
-You will also need to enable this plugin by adding it to the list of enabled plugins using `KONG_PLUGINS` environment variable or the `plugins` key in `kong.conf`
-
-    export KONG_PLUGINS=config-by-env
-
-OR
-
-    plugins=config-by-env
 
 
 ### Parameters
