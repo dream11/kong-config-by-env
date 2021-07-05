@@ -28,13 +28,13 @@ Let's say we are connecting to [Redis](https://redis.io/) in 3 different plugins
                 "url": "http://redis%TEAM_NAME%.dream11-staging.local",
                 "port": 8888
             }
-        }
+        },
         "production": {
             "redis": {
                 "url": "http://redis.dream11.local",
                 "port": 9999
             }
-        },
+        }
     }
 ```
 2. When an nginx worker starts, this plugin reads config from DB/file.
