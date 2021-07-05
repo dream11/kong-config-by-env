@@ -22,7 +22,6 @@ local function load_plugin_from_cache(name)
 end
 
 local function load_config_from_db()
-	kong.log.debug("Fetching config-by-env")
 	local plugin, err = load_plugin_from_cache("config-by-env")
 	if err then
 		kong.log.err(err)
@@ -34,23 +33,25 @@ local function load_config_from_db()
 	local config, err1 = cjson_safe.decode(plugin["config"]["config"])
 	if err1 then
 		kong.log.err(err1)
-		return false, {status = 500, message = "Error in parsing config-by-env as table"}
+		error("Error in parsing config-by-env as table")
+		return nil
 	end
 	local env = os.getenv("KONG_ENV")
 	local final_config = utils.tableMerge(config["default"], config[env])
-	utils.traverseTableAndTransformLeaves(final_config, utils.replaceStringEnvVariables)
-	kong.log.notice("Final config" .. inspect(final_config))
+	
+	local success, err = utils.traverseTableAndTransformLeaves(final_config, utils.replaceStringEnvVariables)
+	if not success then
+		error(err)
+	end
+
+	kong.log.notice("Final config: ", inspect(final_config))
 	return final_config
 end
 
 local function get_config()
 	local config, err = kong.core_cache:get("config-by-env-final", nil, load_config_from_db)
 	if err then
-		kong.log.err(err)
-		return false, {
-			status = 500,
-			message = "Error in loading config-by-env-final from cache",
-		}
+		return false, "Error in fetching configuration from config-by-env plugin"
 	end
 	return config
 end

@@ -2,14 +2,16 @@ local AppConfigHandler = {PRIORITY = 820}
 local singletons = require "kong.singletons"
 local config_by_env = require "kong.plugins.config-by-env.config"
 local pl_utils = require "pl.utils"
+local inspect = require "inspect"
 
 function AppConfigHandler:access(conf)
     local config, err = config_by_env.get_config();
     if not config or err then
-        return kong.response.exit("Error in fetching application config")
+        return kong.response.exit(500, {message = "Error in fetching configuration from config-by-env plugin"})
     end
 
     -- Set config in request context to be shared between all plugins
+    kong.log.debug("Configuration set in request context: ", inspect(config))
     kong.ctx.shared.config_by_env = config
 
     -- Override the service host url from the config
