@@ -7,9 +7,14 @@ local function replaceStringEnvVariables(s)
 		function(str)
             local env_variable = string.sub(str, 2, string.len(str) - 1)
             local result = os.getenv(env_variable)
+			if result == nil then
+				kong.log.err("Environment variable is not set: " .. env_variable)
+				error("Throwing error since environment variable is not set: " .. env_variable)
+			end
             kong.log.notice("Interpolating env variable: " .. env_variable)
             kong.log.notice("Value::" .. inspect(result))
             result = result:gsub("\\([nt])", {n="\n", t="\t"})
+			kong.log.debug("Result of replaceStringEnvVariables is: ", result)
             return result
 		end
 	)
@@ -19,13 +24,23 @@ end
 local function traverseTableAndTransformLeaves(e, transform_function)
 	for k, v in pairs(e) do -- for every element in the table
 		if type(v) == "table" then
-			traverseTableAndTransformLeaves(e[k], transform_function)
+			local success, err = traverseTableAndTransformLeaves(e[k], transform_function)
+			if not success then
+				return false, err
+			end
 		else
 			if type(v) == "string" then
-				e[k] = transform_function(v)
+				local success, val = pcall(transform_function, v)
+				if not success then
+					kong.log.err("Error inside traverseTableAndTransformLeaves: ", val)
+					return false, val
+				else
+					e[k] = val
+				end
 			end
 		end
 	end
+	return true
 end
 
 local function tableMerge(t1, t2)
