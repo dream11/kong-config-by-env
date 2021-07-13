@@ -13,7 +13,7 @@ Let's say we are connecting to [Redis](https://redis.io/) in 3 different plugins
 
 ## Installation
 
-### [luarocks](https://luarocks.org/modules/dream11/kong-config-by-env)
+### [luarocks](https://luarocks.org/modules/dream11/config-by-env)
 ```bash
 luarocks install config-by-env
 ```
@@ -32,6 +32,13 @@ OR
 
     plugins=config-by-env
 
+      
+This plugin requires `KONG_ENV` environment variable to be set in nginx. To do that check this [article](https://discuss.konghq.com/t/set-multiple-env-nginx-directives/7532). A command like below should work and help you set environment variable in Nginx.
+
+```
+export KONG_ENV=production && export KONG_NGINX_MAIN_ENV=KONG_ENV && kong start
+```
+
 
 ## How does it work?
 1. Let us assume following config is stored in schema.  
@@ -40,20 +47,20 @@ OR
    {
         "default": {
             "redis": {
-                "url": "localhost",
+                "host": "localhost",
                 "port": 6379,
 				"connect_timeout": 1000
             }
         },
 		"docker": {
             "redis": {
-                "url": "http://redis%TEAM_NAME%.dream11-staging.local",
+                "host": "http://redis%TEAM_NAME%.dream11-staging.local",
                 "port": 8888
             }
         },
         "production": {
             "redis": {
-                "url": "http://redis.dream11.local",
+                "host": "http://redis.dream11.local",
                 "port": 9999
             }
         }
@@ -64,7 +71,7 @@ OR
 ```
 {
 	"redis": {
-		"url": "http://redis%TEAM_NAME%.dream11-staging.local",
+		"host": "http://redis%TEAM_NAME%.dream11-staging.local",
 		"port": 8888,
 		"connect_timeout": 1000
 	}
@@ -74,14 +81,17 @@ OR
 ```
 {
 	"redis": {
-		"url": "http://redis-user-profile.dream11-staging.local",
+		"host": "http://redis-user-profile.dream11-staging.local",
 		"port": 8888,
 		"connect_timeout": 1000
 	}
 }
 ```
 5. The final config from step 4 will be saved as a Lua table in L1 and L2 cache using [lua-resty-mlcache](https://github.com/thibaultcha/lua-resty-mlcache) library. This config will also be set in request context for other plugins to access this config.
-
+```
+local config_by_env = kong.ctx.shared.config_by_env
+local redis_host = config_by_env["redis"]["host]
+```
 
 ### Parameters
 
@@ -94,5 +104,5 @@ OR
 ## Caveats
 
 1. The plugin uses the kong.core_cache module which in turn uses [lua-resty-mlcache](https://github.com/thibaultcha/lua-resty-mlcache) library.
-2. To change the config at runtime, this plugin uses the worker_events module. It adds a listener to all crud events on the "plugin" entity. When there is a change in the config-by-env plugin, it invalidates the local L1 and L2 cache and sends invalidation event to all other nodes using the db which then invalidate their L1 and L2 cache.
-3. Enable `set_service_url` in config when you want to override the host url of an upstream service. In a case where the host url of service changes with environment, then to manage the service url we have to either keep as kong.yaml file per environment or use config-by-env plugin to overrride the host url as per environment.
+2. To change the config at runtime, this plugin uses the worker_events module. It adds a listener to all crud events on the "plugin" entity. When there is a change in the config-by-env plugin, it invalidates the local L1 and L2 cache and sends invalidation event to all other nodes using the db which then invalidates their L1 and L2 cache.
+3. Enable `set_service_url` in config when you want to override the host url of an upstream service. In a case where the upstream host url changes w.r.t environment, then to manage the service url we have to either keep separate kong.yaml file per environment or we can use config-by-env plugin to override the url as per environment.
