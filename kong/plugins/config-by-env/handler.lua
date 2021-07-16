@@ -1,4 +1,4 @@
-local AppConfigHandler = {PRIORITY = 820}
+local AppConfigHandler = {PRIORITY = 10000}
 local singletons = require "kong.singletons"
 local config_by_env = require "kong.plugins.config-by-env.config"
 local pl_utils = require "pl.utils"
