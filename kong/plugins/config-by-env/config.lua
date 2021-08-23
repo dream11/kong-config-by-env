@@ -44,7 +44,7 @@ local function load_config_from_db()
 		error(err)
 	end
 
-	kong.log.notice("Final config: ", inspect(final_config))
+	kong.log.notice("Final config loaded from db: ", inspect(final_config))
 	return final_config
 end
 
@@ -63,7 +63,7 @@ local function get_service_url(service_name)
 		kong.log.err(err)
 		return false, {status = 500, message = "Error in loading config-by-env"}
 	end
-	kong.log.debug("Fetched url from config::" .. config["services"][service_name])
+	kong.log.debug("Fetched url from config: " .. config["services"][service_name])
 	return config["services"][service_name]
 end
 
