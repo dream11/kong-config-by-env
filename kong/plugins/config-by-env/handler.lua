@@ -11,7 +11,6 @@ function AppConfigHandler:access(conf)
     end
 
     -- Set config in request context to be shared between all plugins
-    kong.log.debug("Configuration set in request context: ", inspect(config))
     kong.ctx.shared.config_by_env = config
 
     -- Override the service host url from the config
@@ -19,7 +18,7 @@ function AppConfigHandler:access(conf)
         local service_url = config["services"][kong.router.get_service()["name"]]
         local host, port = pl_utils.splitv(service_url, ":")
         if not port then port = config["upstream_port"] end
-        kong.log.debug("Upstream url::"..host..":"..port)
+        kong.log.debug("Setting upstream url to: " .. host .. ":" .. port)
 
         kong.service.set_target(host, tonumber(port))
         kong.ctx.shared.upstream_host = host
