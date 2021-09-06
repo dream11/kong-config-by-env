@@ -38,7 +38,7 @@ local function load_config_from_db()
 	end
 	local env = os.getenv("KONG_ENV")
 	local final_config = utils.tableMerge(config["default"], config[env])
-	
+
 	local success, err = utils.traverseTableAndTransformLeaves(final_config, utils.replaceStringEnvVariables)
 	if not success then
 		error(err)
@@ -56,19 +56,41 @@ local function get_config()
 	return config
 end
 
+local function get_service_name()
+	local service_name = kong.router.get_service()["name"]
+
+	if os.getenv("KONG_KIC") == "on" then
+		local service_name_og = service_name
+		local splitted_service_name = pl_stringx.split(service_name_og, '.')
+		if #splitted_service_name == 3 then
+			service_name = splitted_service_name[2]
+			kong.log.debug(string.format("derived service name for k8 env from %s is %s", service_name_og, service_name))
+		end
+	end
+
+	return service_name
+end
+
 local function get_service_url(service_name)
-	kong.log.debug("Fetching url from config::" .. service_name)
 	local config, err = get_config()
 	if err then
 		kong.log.err(err)
 		return false, {status = 500, message = "Error in loading config-by-env"}
 	end
-	kong.log.debug("Fetched url from config: " .. config["services"][service_name])
-	return config["services"][service_name]
+
+	local service_url = config["services"][service_name]
+	if service_url == nil then
+		kong.log.err("Could not find service URL for service name: " .. service_name)
+	else
+		kong.log.debug(string.format("service URL fetched for service %s is %s", service_name, service_url))
+	end
+
+	return service_url
 end
 
 
 local _M = {}
 _M.get_config = get_config
 _M.get_service_url = get_service_url
+_M.get_service_name = get_service_name
 return _M
