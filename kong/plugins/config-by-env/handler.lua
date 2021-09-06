@@ -1,11 +1,15 @@
 local AppConfigHandler = {PRIORITY = 10000}
 local singletons = require "kong.singletons"
-local config_by_env = require "kong.plugins.config-by-env.config"
+local config_loader = require "kong.plugins.config-by-env.config"
+
 local pl_utils = require "pl.utils"
+local pl_utils = require "pl.utils"
+local pl_stringx = require "pl.stringx"
+
 local inspect = require "inspect"
 
 function AppConfigHandler:access(conf)
-    local config, err = config_by_env.get_config();
+    local config, err = config_loader.get_config();
     if not config or err then
         return kong.response.exit(500, {message = "Error in fetching configuration from config-by-env plugin"})
     end
@@ -15,9 +19,14 @@ function AppConfigHandler:access(conf)
 
     -- Override the service host url from the config
     if conf.set_service_url then
-        local service_url = config["services"][kong.router.get_service()["name"]]
+        local service_name = config_loader.get_service_name()
+        local service_url = config_loader.get_service_url(service_name)
+
         local host, port = pl_utils.splitv(service_url, ":")
-        if not port then port = config["upstream_port"] end
+        if not port then
+            port = config["upstream_port"]
+        end
+
         kong.log.debug("Setting upstream url to: " .. host .. ":" .. port)
 
         kong.service.set_target(host, tonumber(port))
