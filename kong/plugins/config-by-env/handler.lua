@@ -1,4 +1,3 @@
-local AppConfigHandler = {PRIORITY = tonumber(os.getenv("PRIORITY_CONFIG_BY_ENV")) or 10000}
 local singletons = require "kong.singletons"
 local config_loader = require "kong.plugins.config-by-env.config"
 
@@ -8,6 +7,7 @@ local pl_stringx = require "pl.stringx"
 
 local inspect = require "inspect"
 
+local AppConfigHandler = {PRIORITY = tonumber(os.getenv("PRIORITY_CONFIG_BY_ENV")) or 10000}
 kong.log.info("Plugin priority set to " .. AppConfigHandler.PRIORITY .. (os.getenv("PRIORITY_CONFIG_BY_ENV") and " from env" or " by default"))
 
 function AppConfigHandler:access(conf)
