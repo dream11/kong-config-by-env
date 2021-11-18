@@ -1,11 +1,11 @@
 package = "config-by-env"
 
-version = "2.0.2-1"
+version = "2.1.0-1"
 
 supported_platforms = {"linux", "macosx"}
 source = {
     url = "git://github.com/dream11/kong-config-by-env",
-    tag = "v2.0.2"
+    tag = "v2.1.0"
 }
 
 description = {
