@@ -42,7 +42,7 @@ export KONG_ENV=production && export KONG_NGINX_MAIN_ENV=KONG_ENV && kong start
 
 ## How does it work?
 1. Let us assume following config is stored in schema.  
-**Note**:  *default | docker | production* are possible values of `KONG_ENV` environment variable.
+**Note**:  *default | staging | production* are possible values of `KONG_ENV` environment variable.
 ```
    {
         "default": {
@@ -52,7 +52,7 @@ export KONG_ENV=production && export KONG_NGINX_MAIN_ENV=KONG_ENV && kong start
 		"connect_timeout": 1000
             }
         },
-	"docker": {
+	"staging": {
             "redis": {
                 "host": "http://redis%TEAM_NAME%.dream11-staging.local",
                 "port": 8888
@@ -67,7 +67,7 @@ export KONG_ENV=production && export KONG_NGINX_MAIN_ENV=KONG_ENV && kong start
     }
 ```
 2. When an nginx worker starts, this plugin reads plugin's config from DB and caches it in memory.
-3. Uses plugin's config extracted in step 2 to merges environment specific config with the `default` config. When `KONG_ENV=docker`, config after merging with `default` config will be:
+3. Uses plugin's config extracted in step 2 to merges environment specific config with the `default` config. When `KONG_ENV=staging`, config after merging with `default` config will be:
 ```
     {
 	"redis": {
