@@ -42,17 +42,17 @@ export KONG_ENV=production && export KONG_NGINX_MAIN_ENV=KONG_ENV && kong start
 
 ## How does it work?
 1. Let us assume following config is stored in schema.  
-**Note**:  *default | docker | production* are possible values of `KONG_ENV` environment variable.
+**Note**:  *default | staging | production* are possible values of `KONG_ENV` environment variable.
 ```
    {
         "default": {
             "redis": {
                 "host": "localhost",
                 "port": 6379,
-				"connect_timeout": 1000
+		"connect_timeout": 1000
             }
         },
-		"docker": {
+	"staging": {
             "redis": {
                 "host": "http://redis%TEAM_NAME%.dream11-staging.local",
                 "port": 8888
@@ -67,30 +67,30 @@ export KONG_ENV=production && export KONG_NGINX_MAIN_ENV=KONG_ENV && kong start
     }
 ```
 2. When an nginx worker starts, this plugin reads plugin's config from DB and caches it in memory.
-3. Uses plugin's config extracted in step 2 to merges environment specific config with the `default` config. When `KONG_ENV=docker`, config after merging with `default` config will be:
+3. Uses plugin's config extracted in step 2 to merges environment specific config with the `default` config. When `KONG_ENV=staging`, config after merging with `default` config will be:
 ```
-{
+    {
 	"redis": {
 		"host": "http://redis%TEAM_NAME%.dream11-staging.local",
 		"port": 8888,
 		"connect_timeout": 1000
-	}
-}
+	 }
+    }
 ```
 4. Let's say we set environment variable `TEAM_NAME=user-profile`, then config after interpolating environment variables will be:
 ```
-{
+    {
 	"redis": {
 		"host": "http://redis-user-profile.dream11-staging.local",
 		"port": 8888,
 		"connect_timeout": 1000
-	}
-}
+	 }
+    }
 ```
 5. The final config from step 4 will be saved as a Lua table in L1 and L2 cache using [lua-resty-mlcache](https://github.com/thibaultcha/lua-resty-mlcache) library. This config will also be set in request context for other plugins to access this config.
 ```
 local config_by_env = kong.ctx.shared.config_by_env
-local redis_host = config_by_env["redis"]["host]
+local redis_host = config_by_env["redis"]["host"]
 ```
 
 ### Parameters
