@@ -78,6 +78,10 @@ local function get_service_url(service_name)
 		return false, {status = 500, message = "Error in loading config-by-env"}
 	end
 
+	if config["services"] == nil then
+		return false, {status = 500, message = "Could not find service urls in the config."}
+	end
+
 	local service_url = config["services"][service_name]
 	if service_url == nil then
 		kong.log.err("Could not find service URL for service name: " .. service_name)
