@@ -1,19 +1,24 @@
 local helpers = require "spec.helpers"
-local config_by_env = require "kong.plugins.config-by-env.config"
 local mocker = require "spec.fixtures.mocker"
-local cjson = require('cjson')
+local cjson = require "cjson"
 local pl_utils = require "pl.utils"
+
+local config_by_env = require "kong.plugins.config-by-env.config"
 
 local function fetchNestedKey(x, key)
 
-    if type(key) == 'string' then key = pl_utils.split(key, "%.") end
-    if table.getn(key) == 1 then return x[key[1]] end
+    if type(key) == 'string' then
+        key = pl_utils.split(key, "%.")
+    end
+    if table.getn(key) == 1 then
+        return x[key[1]]
+    end
     local root_key = table.remove(key, 1)
     return fetchNestedKey(x[root_key], key)
 
 end
 
-local function setup_it_block(strategy, env)
+local function setup_it_block(strategy, env, plugin_config)
     local function mock_cache(cache_table, limit)
         return {
             safe_set = function(self, k, v)
@@ -45,22 +50,32 @@ local function setup_it_block(strategy, env)
 
     mocker.setup(finally, {
         kong = {
-            log = {debug = function() end, info = function() end, notice = function() end},
+            log = {
+                debug = function()
+                end,
+                info = function()
+                end,
+                notice = function()
+                end,
+                inspect = function()
+                end
+            },
             endconfiguration = conf,
-            core_cache = mock_cache({})
+            cache = mock_cache({})
         }
     })
 
     helpers.setenv("KONG_ENV", env.kong_env)
     helpers.setenv("TEAM_SUFFIX", env.team_suffix)
     helpers.setenv("VPC_SUFFIX", env.vpc_suffix)
-    return config_by_env.get_config();
+    return config_by_env.get_config(plugin_config)
 end
 
-for _, strategy in helpers.each_strategy() do
+for _, strategy in helpers.each_strategy({"postgres"}) do
     describe("config_by_env.get_config [#" .. strategy .. "]", function()
 
-        local bp = helpers.get_db_utils(strategy, {"plugins"}, {"config-by-env"});
+        local bp = helpers.get_db_utils(strategy, {"plugins"}, {"config-by-env"})
+        local plugin_config
         setup(function()
 
             local input = {
@@ -90,78 +105,78 @@ for _, strategy in helpers.each_strategy() do
                 }
             }
 
+            plugin_config = {
+                config = cjson.encode(input)
+            }
+
             bp.plugins:insert{
                 name = "config-by-env",
-                config = {config = cjson.encode(input)}
+                config = plugin_config
             }
 
         end)
 
-        teardown(function() end)
+        teardown(function()
+        end)
 
-        local env_array = {
-            {kong_env = "prod", team_suffix = "", vpc_suffix = ""},
-            {kong_env = "stag", team_suffix = "-int-11", vpc_suffix = "-stag"},
-            {
-                kong_env = "stag",
-                team_suffix = "-docker-01",
-                vpc_suffix = "-stag"
-            }
-        }
+        local env_array = {{
+            kong_env = "prod",
+            team_suffix = "",
+            vpc_suffix = ""
+        }, {
+            kong_env = "stag",
+            team_suffix = "-int-11",
+            vpc_suffix = "-stag"
+        }, {
+            kong_env = "stag",
+            team_suffix = "-docker-01",
+            vpc_suffix = "-stag"
+        }}
 
         for _, env in pairs(env_array) do
 
-            local cases = {
-                {
-                    case = string.format(
-                        "Should preserve keys from default config if not present in env config (Root level) - ENV: %s, TEAM_SUFFIX: %s, VPC_SUFFIX: %s",
-                        env.kong_env, env.team_suffix, env.vpc_suffix),
-                    key = "a",
-                    value = "default-a" .. env.team_suffix .. ".dream11" ..
-                        env.vpc_suffix .. ".com"
-                }, {
-                    case = string.format(
-                        "Should overwrite keys from env config (Root level) - ENV: %s, TEAM_SUFFIX: %s, VPC_SUFFIX: %s",
-                        env.kong_env, env.team_suffix, env.vpc_suffix),
-                    key = "b",
-                    value = env.kong_env .. "-b" .. env.team_suffix ..
-                        ".dream11" .. env.vpc_suffix .. ".com"
-                }, {
-                    case = string.format(
-                        "Should add keys from env config (Root level) - ENV: %s, TEAM_SUFFIX: %s, VPC_SUFFIX: %s",
-                        env.kong_env, env.team_suffix, env.vpc_suffix),
-                    key = "e",
-                    value = env.kong_env .. "-e" .. env.team_suffix ..
-                        ".dream11" .. env.vpc_suffix .. ".com"
-                }, {
-                    case = string.format(
-                        "Should preserve keys from default config if not present in env specific config (Nested level) - ENV: %s, TEAM_SUFFIX: %s, VPC_SUFFIX: %s",
-                        env.kong_env, env.team_suffix, env.vpc_suffix),
-                    key = "nested.c",
-                    value = "default-c" .. env.team_suffix .. ".dream11" ..
-                        env.vpc_suffix .. ".com"
-                }, {
-                    case = string.format(
-                        "Should overwrite keys from env config (Nested level) - ENV: %s, TEAM_SUFFIX: %s, VPC_SUFFIX: %s",
-                        env.kong_env, env.team_suffix, env.vpc_suffix),
-                    key = "nested.d",
-                    value = env.kong_env .. "-d" .. env.team_suffix ..
-                        ".dream11" .. env.vpc_suffix .. ".com"
-                }, {
-                    case = string.format(
-                        "Should add keys from env config (Nested level) - ENV: %s, TEAM_SUFFIX: %s, VPC_SUFFIX: %s",
-                        env.kong_env, env.team_suffix, env.vpc_suffix),
-                    key = "nested.f",
-                    value = env.kong_env .. "-f" .. env.team_suffix ..
-                        ".dream11" .. env.vpc_suffix .. ".com"
-                }
-            }
+            local cases = {{
+                case = string.format(
+                    "Should preserve keys from default config if not present in env config (Root level) - ENV: %s, TEAM_SUFFIX: %s, VPC_SUFFIX: %s",
+                    env.kong_env, env.team_suffix, env.vpc_suffix),
+                key = "a",
+                value = "default-a" .. env.team_suffix .. ".dream11" .. env.vpc_suffix .. ".com"
+            }, {
+                case = string.format(
+                    "Should overwrite keys from env config (Root level) - ENV: %s, TEAM_SUFFIX: %s, VPC_SUFFIX: %s",
+                    env.kong_env, env.team_suffix, env.vpc_suffix),
+                key = "b",
+                value = env.kong_env .. "-b" .. env.team_suffix .. ".dream11" .. env.vpc_suffix .. ".com"
+            }, {
+                case = string.format(
+                    "Should add keys from env config (Root level) - ENV: %s, TEAM_SUFFIX: %s, VPC_SUFFIX: %s",
+                    env.kong_env, env.team_suffix, env.vpc_suffix),
+                key = "e",
+                value = env.kong_env .. "-e" .. env.team_suffix .. ".dream11" .. env.vpc_suffix .. ".com"
+            }, {
+                case = string.format(
+                    "Should preserve keys from default config if not present in env specific config (Nested level) - ENV: %s, TEAM_SUFFIX: %s, VPC_SUFFIX: %s",
+                    env.kong_env, env.team_suffix, env.vpc_suffix),
+                key = "nested.c",
+                value = "default-c" .. env.team_suffix .. ".dream11" .. env.vpc_suffix .. ".com"
+            }, {
+                case = string.format(
+                    "Should overwrite keys from env config (Nested level) - ENV: %s, TEAM_SUFFIX: %s, VPC_SUFFIX: %s",
+                    env.kong_env, env.team_suffix, env.vpc_suffix),
+                key = "nested.d",
+                value = env.kong_env .. "-d" .. env.team_suffix .. ".dream11" .. env.vpc_suffix .. ".com"
+            }, {
+                case = string.format(
+                    "Should add keys from env config (Nested level) - ENV: %s, TEAM_SUFFIX: %s, VPC_SUFFIX: %s",
+                    env.kong_env, env.team_suffix, env.vpc_suffix),
+                key = "nested.f",
+                value = env.kong_env .. "-f" .. env.team_suffix .. ".dream11" .. env.vpc_suffix .. ".com"
+            }}
 
             for _, item in pairs(cases) do
                 it(item["case"], function()
-                    local actual_config = setup_it_block(strategy, env)
-                    assert(fetchNestedKey(actual_config, item["key"]) ==
-                               item["value"])
+                    local actual_config = setup_it_block(strategy, env, plugin_config)
+                    assert(fetchNestedKey(actual_config, item["key"]) == item["value"])
                 end)
             end
         end

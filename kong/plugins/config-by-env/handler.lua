@@ -1,19 +1,37 @@
-local singletons = require "kong.singletons"
 local config_loader = require "kong.plugins.config-by-env.config"
 
 local pl_utils = require "pl.utils"
-local pl_utils = require "pl.utils"
-local pl_stringx = require "pl.stringx"
+local ngx = ngx
 
-local inspect = require "inspect"
+local AppConfigHandler = {}
+AppConfigHandler.PRIORITY = tonumber(os.getenv("PRIORITY_CONFIG_BY_ENV")) or 10000
+AppConfigHandler.VERSION = "2.2.0"
 
-local AppConfigHandler = {PRIORITY = tonumber(os.getenv("PRIORITY_CONFIG_BY_ENV")) or 10000}
-kong.log.info("Plugin priority set to " .. AppConfigHandler.PRIORITY .. (os.getenv("PRIORITY_CONFIG_BY_ENV") and " from env" or " by default"))
+kong.log.info("Plugin priority set to " .. AppConfigHandler.PRIORITY ..
+                  (os.getenv("PRIORITY_CONFIG_BY_ENV") and " from env" or " by default"))
+
+local function get_service_url_from_config(config)
+    local service_name = ngx.ctx.service.name
+
+    if config["services"] == nil then
+        return nil
+    end
+
+    local service_url = config["services"][service_name]
+    if service_url == nil then
+        kong.log.err("Could not find service URL for service name: " .. service_name)
+        return nil
+    end
+
+    return service_url
+end
 
 function AppConfigHandler:access(conf)
-    local config, err = config_loader.get_config();
-    if not config or err then
-        return kong.response.exit(500, {message = "Error in fetching configuration from config-by-env plugin"})
+    local config = config_loader.get_config(conf)
+    if not config then
+        return kong.response.exit(500, {
+            message = "Error in fetching configuration from config-by-env plugin"
+        })
     end
 
     -- Set config in request context to be shared between all plugins
@@ -21,15 +39,14 @@ function AppConfigHandler:access(conf)
 
     -- Override the service host url from the config
     if conf.set_service_url then
-        local service_name = config_loader.get_service_name()
-        local service_url = config_loader.get_service_url(service_name)
-
-        local host, port = pl_utils.splitv(service_url, ":")
-        if not port then
-            port = config["upstream_port"]
+        local service_url = get_service_url_from_config(config)
+        -- If service url not found in config, default to service host, port
+        if not service_url then
+            return
         end
 
-        kong.log.debug("Setting upstream url to: " .. host .. ":" .. port)
+        local host, port = pl_utils.splitv(service_url, ":")
+        port = port or 80
 
         kong.service.set_target(host, tonumber(port))
         kong.ctx.shared.upstream_host = host
@@ -37,14 +54,11 @@ function AppConfigHandler:access(conf)
 end
 
 function AppConfigHandler:init_worker()
-    local worker_events = singletons.worker_events
-
     -- listen to all CRUD operations made on Consumers
-    worker_events.register(function(data)
-        kong.log.debug("Updated entitty:::" .. data["entity"]["name"])
+    kong.worker_events.register(function(data)
         if data["entity"]["name"] == "config-by-env" then
-            kong.log.notice("invalidating config-by-env-final")
-            kong.core_cache:invalidate("config-by-env-final", false)
+            kong.log.notice("config-by-env: Invalidating Config")
+            kong.cache:invalidate_local("config-by-env-final")
         end
     end, "crud", "plugins:update")
 end

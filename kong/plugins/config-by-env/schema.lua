@@ -13,39 +13,30 @@ local function json_validator(config_string)
 end
 
 local function schema_validator(conf)
-	return json_validator(conf.config)
+    return json_validator(conf.config)
 end
 
-
-
 return {
-	name = "config-by-env",
-	fields = {
-		{
-			consumer = typedefs.no_consumer
-		},
-		{
-			protocols = typedefs.protocols_http
-		},
-		{
-			config = {
-				type = "record",
-				fields = {
-					{
-						config = {
-							type = "string",
-							required = true
-						}
-					},
-					{
-						set_service_url = {
-							type = "boolean",
-							default = false
-						}
-					},
-				},
-                custom_validator = schema_validator
-			},
-		}
-	}
+    name = "config-by-env",
+    fields = {{
+        consumer = typedefs.no_consumer
+    }, {
+        protocols = typedefs.protocols_http
+    }, {
+        config = {
+            type = "record",
+            fields = {{
+                config = {
+                    type = "string",
+                    required = true
+                }
+            }, {
+                set_service_url = {
+                    type = "boolean",
+                    default = false
+                }
+            }},
+            custom_validator = schema_validator
+        }
+    }}
 }
