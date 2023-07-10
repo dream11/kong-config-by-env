@@ -20,6 +20,7 @@ ACCESS_TOKEN=$2
 git remote set-url origin https://x-access-token:$ACCESS_TOKEN@github.com/kong-config-by-env
 
 git mv $file_name $new_file_name
+git checkout test/release
 git add .
 git commit -m "chore: bump version from $version to $new_version"
 git push origin HEAD:test/release
