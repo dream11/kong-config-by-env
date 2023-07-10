@@ -15,7 +15,7 @@ name: Draft and Bump
 on:
   push:
     branches:
-      - master
+      - test/release
   # pull_request event is required only for autolabeler
   pull_request:
     types: [opened, reopened, synchronize]
@@ -42,7 +42,7 @@ jobs:
     - name: Check Publish label
       id: check-publish-label
       # If target branch is "master", only then run this step
-      if: ${{ github.ref == 'refs/heads/master' }}
+      if: ${{ github.ref == 'refs/heads/test/release' }}
       uses: shioyang/check-pr-labels-on-push-action@v1.0.3
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -50,11 +50,11 @@ jobs:
 
     - name: Checkout repo
       # If target branch is "master" and PR has label "publish", only then run this step
-      if: ${{ steps.check-publish-label.outputs.result == 'true' && github.ref == 'refs/heads/master' }}
+      if: ${{ steps.check-publish-label.outputs.result == 'true' && github.ref == 'refs/heads/test/release' }}
       uses: actions/checkout@v2
       with:
         token: ${{ secrets.COMMIT_ACCESS_TOKEN }}
 
     - name: Bump Version
-      if: ${{ steps.check-publish-label.outputs.result == 'true' && github.ref == 'refs/heads/master' }}
+      if: ${{ steps.check-publish-label.outputs.result == 'true' && github.ref == 'refs/heads/test/release' }}
       run: .ci/scripts/bump-rockspec.sh ${{ needs.update-release-draft.outputs.tag-name }} ${{ secrets.COMMIT_ACCESS_TOKEN }}
