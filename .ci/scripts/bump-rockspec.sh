@@ -17,7 +17,8 @@ git config user.name github-actions
 git config user.email github-actions@github.com
 
 ACCESS_TOKEN=$2
-git remote set-url origin https://x-access-token:$ACCESS_TOKEN@github.com/kong-config-by-env
+REPOSITORY=$3
+git remote set-url origin https://x-access-token:$ACCESS_TOKEN@github.com/$REPOSITORY
 
 git mv $file_name $new_file_name
 git checkout test/release
