@@ -23,4 +23,4 @@ git mv $file_name $new_file_name
 git checkout test/release
 git add .
 git commit -m "chore: bump version from $version to $new_version"
-git push origin HEAD:test/release
+git push
