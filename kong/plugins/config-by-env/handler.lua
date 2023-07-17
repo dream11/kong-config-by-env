@@ -54,11 +54,10 @@ function AppConfigHandler:access(conf)
 end
 
 function AppConfigHandler:init_worker()
-    -- listen to all CRUD operations made on Consumers
     kong.worker_events.register(function(data)
         if data["entity"]["name"] == "config-by-env" then
             kong.log.notice("config-by-env: Invalidating Config")
-            kong.cache:invalidate_local("config-by-env-final")
+            kong.cache:invalidate("config-by-env-final")
         end
     end, "crud", "plugins:update")
 end
