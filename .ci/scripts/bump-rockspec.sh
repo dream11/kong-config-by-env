@@ -1,3 +1,4 @@
+whoami
 file_name=$(ls *.rockspec)
 
 prefix='config-by-env-'
