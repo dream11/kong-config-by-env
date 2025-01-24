@@ -1,8 +1,6 @@
 local cjson_safe = require "cjson.safe"
 local utils = require "kong.plugins.config-by-env.utils"
 
-local ngx = ngx
-
 local function process_config(conf)
     local config, err = cjson_safe.decode(conf.config)
     local env = os.getenv("KONG_ENV")
@@ -22,10 +20,19 @@ local function process_config(conf)
     return final_config
 end
 
+local function get_config_from_db()
+    local key = kong.db.plugins:cache_key("config-by-env")
+    local row, err = kong.db.plugins:select_by_cache_key(key)
+	if err then
+		return nil, tostring(err)
+	end
+    return process_config(row.config)
+end
+
 local function get_config(conf)
     local config, err = kong.cache:get("config-by-env-final", {
         ttl = 0
-    }, process_config, conf)
+    }, get_config_from_db)
 
     if err then
         return false
