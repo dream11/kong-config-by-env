@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 env:
-  KONG_VERSION: 2.2.0
+  KONG_VERSION: 3.3.x
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
