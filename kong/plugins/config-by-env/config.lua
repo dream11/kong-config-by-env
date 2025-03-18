@@ -6,6 +6,7 @@ local ngx = ngx
 local function process_config(conf)
     local config, err = cjson_safe.decode(conf.config)
     local env = os.getenv("KONG_ENV")
+    
     if err then
         kong.log.err(err)
         error("Error in parsing config-by-env as table")
