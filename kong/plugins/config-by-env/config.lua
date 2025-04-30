@@ -1,6 +1,16 @@
 local cjson_safe = require "cjson.safe"
 local utils = require "kong.plugins.config-by-env.utils"
 
+local fallback_config = {}
+
+local function get_fallback_config()
+    return fallback_config.config
+end
+
+local function set_fallback_config(db_config)
+    fallback_config.config = db_config
+end
+
 local function process_config(conf)
     local config, err = cjson_safe.decode(conf.config)
     local env = os.getenv("KONG_ENV")
@@ -26,7 +36,9 @@ local function get_config_from_db()
 	if err then
 		return nil, tostring(err)
 	end
-    return process_config(row.config)
+    local fetched_config = process_config(row.config)
+    set_fallback_config(fetched_config)
+    return fetched_config
 end
 
 local function get_config(conf)
@@ -35,7 +47,7 @@ local function get_config(conf)
     }, get_config_from_db)
 
     if err then
-        return false
+        return get_fallback_config()
     end
     return config
 end
