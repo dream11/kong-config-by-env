@@ -1,16 +1,6 @@
 local cjson_safe = require "cjson.safe"
 local utils = require "kong.plugins.config-by-env.utils"
 
-local fallback_config = {}
-
-local function get_fallback_config()
-    return fallback_config.config
-end
-
-local function set_fallback_config(db_config)
-    fallback_config.config = db_config
-end
-
 local function process_config(conf)
     local config, err = cjson_safe.decode(conf.config)
     local env = os.getenv("KONG_ENV")
@@ -30,24 +20,24 @@ local function process_config(conf)
     return final_config
 end
 
-local function get_config_from_db()
+local function get_config_from_db(conf)
     local key = kong.db.plugins:cache_key("config-by-env")
     local row, err = kong.db.plugins:select_by_cache_key(key)
 	if err then
-		return nil, tostring(err)
+        -- cache the old db entry for 20 seconds before retrying
+        kong.log.err("Failed to fetch config from db due to "..tostring(err)..", using config from db")
+		return process_config(conf), nil, 20
 	end
-    local fetched_config = process_config(row.config)
-    set_fallback_config(fetched_config)
-    return fetched_config
+    return process_config(row.config)
 end
 
 local function get_config(conf)
     local config, err = kong.cache:get("config-by-env-final", {
         ttl = 0
-    }, get_config_from_db)
+    }, get_config_from_db, conf)
 
     if err then
-        return get_fallback_config()
+        return false
     end
     return config
 end
