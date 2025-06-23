@@ -25,7 +25,7 @@ local function get_config_from_db(conf)
     local row, err = kong.db.plugins:select_by_cache_key(key)
 	if err then
         -- cache the old db entry for 20 seconds before retrying
-        kong.log.err("Failed to fetch config from db due to "..tostring(err)..", using config from db")
+        kong.log.err("Failed to fetch config from db due to [" .. tostring(err) .. "], using old config")
 		return process_config(conf), nil, 20
 	end
     return process_config(row.config)
