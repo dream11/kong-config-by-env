@@ -20,11 +20,13 @@ local function process_config(conf)
     return final_config
 end
 
-local function get_config_from_db()
+local function get_config_from_db(conf)
     local key = kong.db.plugins:cache_key("config-by-env")
     local row, err = kong.db.plugins:select_by_cache_key(key)
 	if err then
-		return nil, tostring(err)
+        -- cache the old db entry for 20 seconds before retrying
+        kong.log.err("Failed to fetch config from db due to [" .. tostring(err) .. "], using old config")
+		return process_config(conf), nil, 20
 	end
     return process_config(row.config)
 end
@@ -32,7 +34,7 @@ end
 local function get_config(conf)
     local config, err = kong.cache:get("config-by-env-final", {
         ttl = 0
-    }, get_config_from_db)
+    }, get_config_from_db, conf)
 
     if err then
         return false
