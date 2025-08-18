@@ -20,22 +20,23 @@ luarocks install config-by-env
 
 ### source
 Clone this repo and run:
-```
+```bash
 luarocks make
 ```
 
 You will also need to enable this plugin by adding it to the list of enabled plugins using `KONG_PLUGINS` environment variable or the `plugins` key in `kong.conf`
-
+    ```bash
     export KONG_PLUGINS=config-by-env
-
+    ```
 OR
-
+    ```bash
     plugins=config-by-env
+    ```
 
       
 This plugin requires `KONG_ENV` environment variable to be set in nginx. To do that check this [article](https://discuss.konghq.com/t/set-multiple-env-nginx-directives/7532). A command like below should work and help you set environment variable in Nginx.
 
-```
+```bash
 export KONG_ENV=production && export KONG_NGINX_MAIN_ENV=KONG_ENV && kong start
 ```
 
@@ -43,7 +44,7 @@ export KONG_ENV=production && export KONG_NGINX_MAIN_ENV=KONG_ENV && kong start
 ## How does it work?
 1. Let us assume following config is stored in schema.  
 **Note**:  *default | staging | production* are possible values of `KONG_ENV` environment variable.
-```
+```json
    {
         "default": {
             "redis": {
@@ -68,7 +69,7 @@ export KONG_ENV=production && export KONG_NGINX_MAIN_ENV=KONG_ENV && kong start
 ```
 2. When an nginx worker starts, this plugin reads plugin's config from DB and caches it in memory.
 3. Uses plugin's config extracted in step 2 to merges environment specific config with the `default` config. When `KONG_ENV=staging`, config after merging with `default` config will be:
-```
+```json
     {
 	"redis": {
 		"host": "http://redis%TEAM_NAME%.dream11-staging.local",
@@ -78,7 +79,7 @@ export KONG_ENV=production && export KONG_NGINX_MAIN_ENV=KONG_ENV && kong start
     }
 ```
 4. Let's say we set environment variable `TEAM_NAME=user-profile`, then config after interpolating environment variables will be:
-```
+```json
     {
 	"redis": {
 		"host": "http://redis-user-profile.dream11-staging.local",
@@ -88,7 +89,7 @@ export KONG_ENV=production && export KONG_NGINX_MAIN_ENV=KONG_ENV && kong start
     }
 ```
 5. The final config from step 4 will be saved as a Lua table in L1 and L2 cache using [lua-resty-mlcache](https://github.com/thibaultcha/lua-resty-mlcache) library. This config will also be set in request context for other plugins to access this config.
-```
+```lua
 local config_by_env = kong.ctx.shared.config_by_env
 local redis_host = config_by_env["redis"]["host"]
 ```
