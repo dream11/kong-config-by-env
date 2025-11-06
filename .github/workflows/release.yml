@@ -13,9 +13,11 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Bump Rockspec version
-      run: .ci/scripts/bump-rockspec.sh ${{ github.event.release.tag_name }} ${{ secrets.COMMIT_ACCESS_TOKEN }} ${{ github.repository }}
+      run: .ci/scripts/bump-rockspec.sh ${{ github.event.release.tag_name }} ${{ secrets.COMMIT_ACCESS_TOKEN }} ${{ github.repository }} ${{ github.event.release.target_commitish }}
 
     - name: Install dependencies
       run: .ci/scripts/install-deps.sh
