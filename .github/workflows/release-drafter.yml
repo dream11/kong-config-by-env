@@ -1,0 +1,24 @@
+# This workflow creates/updates release drafts
+
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - master
+  # pull_request event is required only for autolabeler
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  update-release-draft:
+    runs-on: ubuntu-latest
+
+    outputs:
+      tag-name: ${{ steps.release-drafter.outputs.tag_name }}
+
+    steps:
+      - id: release-drafter
+        uses: release-drafter/release-drafter@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
