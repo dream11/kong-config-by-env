@@ -6,9 +6,6 @@ on:
   push:
     branches:
       - master
-  # pull_request event is required only for autolabeler
-  pull_request:
-    types: [opened, reopened, synchronize]
 
 jobs:
   update-release-draft:
