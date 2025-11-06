@@ -1,0 +1,21 @@
+# This workflow creates/updates release drafts
+
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  update-release-draft:
+    runs-on: ubuntu-latest
+
+    outputs:
+      tag-name: ${{ steps.release-drafter.outputs.tag_name }}
+
+    steps:
+      - id: release-drafter
+        uses: release-drafter/release-drafter@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

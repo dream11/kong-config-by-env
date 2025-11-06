@@ -12,7 +12,13 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
-    - run: .ci/scripts/install-deps.sh
-    - run: .ci/scripts/upload.sh ${{ secrets.LUAROCKS_KEY }}
+    - name: Bump Rockspec version
+      run: .ci/scripts/bump-rockspec.sh ${{ github.event.release.tag_name }} ${{ secrets.COMMIT_ACCESS_TOKEN }} ${{ github.repository }}
+
+    - name: Install dependencies
+      run: .ci/scripts/install-deps.sh
+
+    - name: Upload to Luarocks
+      run: .ci/scripts/upload.sh ${{ secrets.LUAROCKS_KEY }}
