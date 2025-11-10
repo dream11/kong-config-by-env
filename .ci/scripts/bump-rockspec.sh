@@ -16,17 +16,7 @@ new_file_name="$prefix$new_version$suffix"
 git config user.name github-actions
 git config user.email github-actions@github.com
 
-ACCESS_TOKEN=$2
-REPOSITORY=$3
-BRANCH=${4:-master}
-
-git remote set-url origin https://x-access-token:$ACCESS_TOKEN@github.com/$REPOSITORY
-
-# Fetch all branches and checkout the target branch
-git fetch origin
-git checkout $BRANCH
-
 git mv $file_name $new_file_name
 git add .
 git commit -m "chore: bump version from $version to $new_version"
-git push origin $BRANCH
+git push origin HEAD:master
